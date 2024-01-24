@@ -4,17 +4,8 @@ import uuid
 
 
 
-
-# OBJECTIVES TODO: 
-# 1) Read the code and understand it.
-# 2) Read the code again and understand it better.
-# 3) Feel free to do 1 and 2 however many times you feel like.
-# 4) Complete the SyncService implementation. Note that the SyncService.onMessage and SyncService.__init__ function signature must not be altered.
-
-
-
-
 _DATA_KEYS = ["a","b","c"]
+
 class Device:
     def __init__(self, id):
         self._id = id
@@ -61,7 +52,6 @@ Identified by type `record`. `timestamp` records when the record was sent and `d
                 return
             self.records = self.records[:_from] + data['data']
 
-
 class SyncService:
     def __init__(self):
         self.records = []
@@ -70,48 +60,39 @@ class SyncService:
         """Handle messages received from devices.
         Return the desired information in the correct format (type `update`, see Device.onMessage and testSyncing to understand format intricacies) in response to a `probe`.
         No return value required on handling a `record`."""
+        # if data == {}:
+        #     print(0)
+        #     return {'type': 'update', 'from': 0, 'data': []}
+    
         if data['type'] == 'record':
             self.records.append(data)
         
         elif data['type'] == 'probe':
-            return {'type': 'update', 'from': data['from'], 'data': self.records}
+            print(data['from'])
+            return {'type': 'update', 'from': data['from'] - 1, 'data': self.records}
         
         else:
             raise NotImplementedError()
 
 
-def testSyncing():
-    devices = [Device(f"dev_{i}") for i in range(1)]
-    syn = SyncService()
+dev1 = Device("dev_1")
+sync = SyncService()
 
-    _N = int(10)
-    for i in range(_N):
-        for _dev in devices:
-            syn.onMessage(_dev.obtainData())
-            _dev.onMessage(syn.onMessage(_dev.probe()))
-            print(len(_dev.records))
+for i in range(2):
+    sync.onMessage(dev1.obtainData())
+    dev1.onMessage(sync.onMessage(dev1.probe()))
+    print((dev1.records))
 
 
-    done = False
-    while not done:
-        for _dev in devices: _dev.onMessage(syn.onMessage(_dev.probe()))
-        num_recs = len(devices[0].records)
-        done = all([len(_dev.records) == num_recs for _dev in devices])
+# print(len(sync.records))
+# print(dev1.probe()['from'])
+# print(len(sync.onMessage(dev1.probe())['data']))
+
+# print(dev1.probe()['from'])
 
 
-    ver_start = [0] * len(devices)
-    for i,rec in enumerate(devices[0].records):
-        _dev_idx = int(rec['dev_id'].split("_")[-1])
-        assertEquivalent(rec, devices[_dev_idx].sent[ver_start[_dev_idx]])
-        for _dev in devices[1:]:
-            assertEquivalent(rec, _dev.records[i])
-        ver_start[_dev_idx] += 1
+# sync.onMessage(dev1.obtainData())
 
-def assertEquivalent(d1:dict, d2:dict):
-    assert d1['dev_id'] == d2['dev_id']
-    assert d1['timestamp'] == d2['timestamp']
-    for kee in _DATA_KEYS:
-        assert d1['data'][kee] == d2['data'][kee]
+# print(dev1.probe()['from'])
 
-testSyncing()
 
