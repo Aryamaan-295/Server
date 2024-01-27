@@ -5,7 +5,7 @@ import uuid
 
 
 
-# OBJECTIVES TODO: 
+# OBJECTIVES TODO:
 # 1) Read the code and understand it.
 # 2) Read the code again and understand it better.
 # 3) Feel free to do 1 and 2 however many times you feel like.
@@ -23,12 +23,11 @@ class Device:
 
 
     def obtainData(self) -> dict:
-        """Returns a single new datapoint from the device.
-Identified by type `record`. `timestamp` records when the record was sent and `dev_id` is the device id.
+        """Returns a single new datapoint from the device.Identified by type `record`. `timestamp` records when the record was sent and `dev_id` is the device id.
         `data` is the data collected by the device."""
-        # if random.random() < 0.4:
-        #     # Sometimes there's no new data
-        #     return {}
+        if random.random() < 0.4:
+            # Sometimes there's no new data
+            return {}
 
 
         rec = {
@@ -41,9 +40,9 @@ Identified by type `record`. `timestamp` records when the record was sent and `d
     def probe(self) -> dict:
         """Returns a probe request to be sent to the SyncService.
         Identified by type `probe`. `from` is the index number from which the device is asking for the data."""
-        # if random.random() < 0.5:
-        #     # Sometimes the device forgets to probe the SyncService
-        #     return {}
+        if random.random() < 0.5:
+            # Sometimes the device forgets to probe the SyncService
+            return {}
 
 
         return {'type': 'probe', 'dev_id': self._id, 'from': len(self.records)}
@@ -51,10 +50,10 @@ Identified by type `record`. `timestamp` records when the record was sent and `d
 
     def onMessage(self, data: dict):
         """Receives updates from the server"""
-        # if random.random() < 0.6:
-        #     # Sometimes devices make mistakes. Let's hope the SyncService handles such failures.
-        #     return
-        
+        if random.random() < 0.6:
+            # Sometimes devices make mistakes. Let's hope the SyncService handles such failures.
+            return
+
         if data['type'] == 'update':
             _from = data['from']
             if _from > len(self.records):
@@ -70,26 +69,30 @@ class SyncService:
         """Handle messages received from devices.
         Return the desired information in the correct format (type `update`, see Device.onMessage and testSyncing to understand format intricacies) in response to a `probe`.
         No return value required on handling a `record`."""
-        if data['type'] == 'record':
-            self.records.append(data)
         
+        if data == {}:
+            return {'type': 'update', 'from': 0, 'data': []}
+        
+        elif data['type'] == 'record':
+            self.records.append(data)
+
         elif data['type'] == 'probe':
-            return {'type': 'update', 'from': data['from'], 'data': self.records}
+            _from = data['from']
+            return {'type': 'update', 'from': _from, 'data': self.records[_from:]}
         
         else:
             raise NotImplementedError()
 
 
 def testSyncing():
-    devices = [Device(f"dev_{i}") for i in range(1)]
+    devices = [Device(f"dev_{i}") for i in range(10)]
     syn = SyncService()
 
-    _N = int(10)
+    _N = int(1)
     for i in range(_N):
         for _dev in devices:
             syn.onMessage(_dev.obtainData())
             _dev.onMessage(syn.onMessage(_dev.probe()))
-            print(len(_dev.records))
 
 
     done = False
@@ -113,5 +116,5 @@ def assertEquivalent(d1:dict, d2:dict):
     for kee in _DATA_KEYS:
         assert d1['data'][kee] == d2['data'][kee]
 
-testSyncing()
 
+testSyncing()
